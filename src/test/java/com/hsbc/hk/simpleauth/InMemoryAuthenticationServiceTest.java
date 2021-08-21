@@ -284,7 +284,7 @@ class AuthenticationServiceTest {
                 }
 
                 @Test
-                void existingTokenInvalidated() {
+                void existingTokenNoLongerValid() {
                     assertThrows(InvalidTokenException.class, () -> service.getAllRoles(token1));
                     assertThrows(InvalidTokenException.class, () -> service.checkRole(token1, role1));
                     assertThrows(InvalidTokenException.class, () -> service.checkRole(token1, role3));
@@ -296,10 +296,7 @@ class AuthenticationServiceTest {
                             "deleted user must not be found");
                 }
             }
-        }
 
-        @Nested
-        class WhenAuthenticatingUnsuccessfully {
             @Test
             void authenticateUnsuccessfully() {
                 var token = service.authenticate(USER_1, PASSWORD_WRONG, getNewSaltForAuth());
@@ -310,6 +307,34 @@ class AuthenticationServiceTest {
             void authenticateUnknownUser() {
                 var token = service.authenticate(USER_NONEXISTENT, PASSWORD_1, getNewSaltForAuth());
                 assertNull(token, "Authenticate expected to fail");
+            }
+
+            @Nested
+            class WhenTamperingWithToken {
+                @BeforeEach
+                void hackTokens() throws IllegalAccessException, NoSuchFieldException {
+                    var dataField= token1.getClass().getDeclaredField("data");
+                    var data1 = dataField.get(token1);
+                    var usernameField = data1.getClass().getDeclaredField("username");
+                    usernameField.setAccessible(true);
+                    usernameField.set(data1, "User2");
+
+                    var data1_2 = dataField.get(token1_2);
+                    var rolesField = data1_2.getClass().getDeclaredField("roles");
+                    rolesField.setAccessible(true);
+                    rolesField.set(data1_2, new String[]{ROLE_3});
+                }
+
+                @Test
+                void token1NoLongerValid() {
+                    assertThrows(InvalidTokenException.class, () -> service.getAllRoles(token1));
+                    assertThrows(InvalidTokenException.class, () -> service.checkRole(token1, role1));
+                }
+                @Test
+                void token1_2NoLongerValid() {
+                    assertThrows(InvalidTokenException.class, () -> service.getAllRoles(token1_2));
+                    assertThrows(InvalidTokenException.class, () -> service.checkRole(token1_2, role1));
+                }
             }
         }
 
