@@ -35,6 +35,12 @@ public class InMemoryAuthenticationService implements AuthenticationService {
 
     @Override
     public User createUser(String name, String password) {
+        if (null == name || name.isBlank()) {
+            throw new IllegalArgumentException("User name cannot be blank");
+        }
+        if (null == password || password.isBlank()) {
+            throw new IllegalArgumentException("Password cannot be blank");
+        }
         var salt = generatePasswordSalt();
         var hash = calculatePasswordHash(password, salt);
         var user = new UserRecord(name, salt, hash);
@@ -85,6 +91,10 @@ public class InMemoryAuthenticationService implements AuthenticationService {
 
     @Override
     public Role createRole(String name) {
+        if (null == name || name.isBlank()) {
+            throw new IllegalArgumentException("Role name cannot be blank");
+        }
+
         var role = new RoleImpl(name);
         var oldRole = roles.putIfAbsent(RoleImpl.toCanonicalName(name), role);
         if (oldRole != null) {
@@ -110,15 +120,26 @@ public class InMemoryAuthenticationService implements AuthenticationService {
 
         var record = findUserInternal(user.name());
         if (record != null) {
-            record.getRoles().add( role);
+            List<Role> roles = record.getRoles();
+            if (roles.contains(role)) {
+                throw new InvalidOperationException("Specified role already assigned to this user");
+            }
+            roles.add( role);
         }
         // else user is deleted, just ignore (or, better, declare and throw an exception, but needs changing interface)
     }
 
     @Override
     public Token authenticate(String username, String password, String salt) {
+        if (null == username || username.isBlank()) {
+            throw new IllegalArgumentException("User name cannot be blank");
+        }
+        if (null == salt || salt.isBlank()) {
+            throw new IllegalArgumentException("Salt cannot be blank");
+        }
+
         var user = findUserInternal(username);
-        if (user == null) {
+        if (user == null || password == null) {
             // TODO: log: user not found;
             return null;
         }

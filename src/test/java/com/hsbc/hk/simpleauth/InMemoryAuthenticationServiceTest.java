@@ -4,6 +4,7 @@ import com.hsbc.hk.AuthenticationService;
 import com.hsbc.hk.Role;
 import com.hsbc.hk.Token;
 import com.hsbc.hk.User;
+import com.hsbc.hk.errors.InvalidOperationException;
 import com.hsbc.hk.errors.InvalidTokenException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @DisplayName("Authentication service")
 class AuthenticationServiceTest {
@@ -158,12 +160,7 @@ class AuthenticationServiceTest {
             }
         }
 
-        @Nested
-        class WhenAddingDuplicates {
-            // add dup role
-            // add dup user
-            // add role again to user
-        }
+        
 
 
         @Nested
@@ -298,15 +295,20 @@ class AuthenticationServiceTest {
             }
 
             @Test
-            void authenticateUnsuccessfully() {
-                var token = service.authenticate(USER_1, PASSWORD_WRONG, getNewSaltForAuth());
-                assertNull(token, "Authenticate expected to fail");
+            void authenticationFailsWithWrongPassword() {
+                assertNull(service.authenticate(USER_1, PASSWORD_WRONG, getNewSaltForAuth()),
+                        "Authenticate expected to fail");
+            }
+            @Test
+            void authenticationFailsWithNullPassword() {
+                assertNull(service.authenticate(USER_1, null, getNewSaltForAuth()),
+                        "Authenticate expected to fail");
             }
 
             @Test
-            void authenticateUnknownUser() {
-                var token = service.authenticate(USER_NONEXISTENT, PASSWORD_1, getNewSaltForAuth());
-                assertNull(token, "Authenticate expected to fail");
+            void authenticateUnknownUserFails() {
+                assertNull(service.authenticate(USER_NONEXISTENT, PASSWORD_1, getNewSaltForAuth()),
+                        "Authenticate expected to fail");
             }
 
             @Nested
@@ -338,6 +340,56 @@ class AuthenticationServiceTest {
             }
         }
 
+        @Nested
+        class WithInvalidArguments {
+            
+            @Test
+            void roleWithEmptyName() {
+                assertThrows(IllegalArgumentException.class, () -> service.createRole(null));
+                assertThrows(IllegalArgumentException.class, () -> service.createRole(""));
+            } 
+            
+            @Test
+            void userWithEmptyName() {
+                assertThrows(IllegalArgumentException.class, () -> service.createUser(null, "Password213"));
+                assertThrows(IllegalArgumentException.class, () -> service.createUser("","Password213"));
+            }
+
+            @Test
+            void userWithEmptyPassword() {
+                assertThrows(IllegalArgumentException.class, () -> service.createUser("User4", null));
+                assertThrows(IllegalArgumentException.class, () -> service.createUser("User4",""));
+                assertThrows(IllegalArgumentException.class, () -> service.createUser("User4"," "));
+            }
+
+            @Test
+            void authenticateWithEmptySalt() {
+                assertThrows(IllegalArgumentException.class,
+                        () -> service.authenticate(USER_NONEXISTENT, PASSWORD_1, null),
+                        "Authenticate expected to fail without salt");
+                assertThrows(IllegalArgumentException.class,
+                        () -> service.authenticate(USER_NONEXISTENT, PASSWORD_1, ""),
+                        "Authenticate expected to fail without salt");
+            }
+
+            @Test
+            void addDuplicateRole() {
+                assertThrows(InvalidOperationException.class, () -> service.createRole(ROLE_1));
+            }
+
+            @Test
+            void addDuplicateUser() {
+                assertThrows(InvalidOperationException.class, () -> service.createUser(USER_1, PASSWORD_1));
+                assertThrows(InvalidOperationException.class, () -> service.createUser(USER_1, PASSWORD_WRONG));
+            }
+
+            @Test
+            void addRoleAgainToSameUser() {
+                assertThrows(InvalidOperationException.class, () -> service.addRoleToUser(role1, user1),
+                        "Attempt to add duplicate role should fail");
+            }
+        }
+      
 
 
         int saltCounter = 0;
