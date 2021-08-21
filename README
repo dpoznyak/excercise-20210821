@@ -1,0 +1,27 @@
+# Benchmarks HK take home assignment
+
+Your task is to create an implementation of the AuthenticationService interface. Feel free to implement any other
+interfaces you feel necessary, or add additional classes and interfaces, but do try to keep your code simple.  Do not
+CHANGE any of the provided interfaces.
+
+You also MUST update the AccessPoint class - make sure the function in it returns a fully constructed instance of your
+service implementation.
+
+Methods that can fail should throw derivatives of RuntimeException with meaningful descriptions.
+
+Make sure your solution has comprehensive unit tests.
+
+If you use external libraries outside of the standard JDK, please mention in the README and explain their purpose. Your
+goal should be to use as few external libraries as possible.
+
+You have 48 hrs to complete the exercise from the point it's received. Once done, pls return the submission via email
+or public Github (and then send us the details).
+
+The files for the project can be found below. Save them into the appropriate directory structure first.
+
+Feel free to add whatever comments regarding your implementation below the line.
+
+
+=======================================================================================================
+
+
