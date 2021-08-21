@@ -25,3 +25,5 @@ Feel free to add whatever comments regarding your implementation below the line.
 =======================================================================================================
 
 
+Assumptions:
+* assuming users and roles are case-insensitive
