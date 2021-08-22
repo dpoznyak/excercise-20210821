@@ -276,6 +276,10 @@ class AuthenticationServiceTest {
                             "deleted role must not be found");
                 }
 
+                @Test
+                void cannotAddDeletedRoleToUser() {
+                    assertThrows(InvalidOperationException.class, ()-> service.addRoleToUser(role1, user3));
+                }
             }
 
             @Nested

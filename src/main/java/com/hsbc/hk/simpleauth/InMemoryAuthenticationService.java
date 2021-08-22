@@ -172,7 +172,7 @@ public class InMemoryAuthenticationService implements AuthenticationService {
         if (record == null) {
             throw new InvalidOperationException("User not found");
         }
-        if (roles.containsKey(role)) {
+        if (!roles.containsKey(RoleImpl.toCanonicalName(role.name()))) {
             throw new InvalidOperationException("Role not found");
         }
 
@@ -238,7 +238,7 @@ public class InMemoryAuthenticationService implements AuthenticationService {
             throw new InvalidOperationException("User not found");
         }
 
-        return user.getRoles().stream().anyMatch(r -> r.name() == role.name());
+        return user.getRoles().stream().anyMatch(r -> r.name().equals(role.name()));
     }
 
     private TokenService.TokenData validateToken(Token token) {
