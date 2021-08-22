@@ -18,6 +18,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class InMemoryAuthenticationService implements AuthenticationService {
@@ -35,10 +36,10 @@ public class InMemoryAuthenticationService implements AuthenticationService {
 
     @Override
     public User createUser(String name, String password) {
-        if (null == name || name.isBlank()) {
+        if (null == name || name.isBlank() || !isUsernameValid(name))  {
             throw new IllegalArgumentException("User name cannot be blank");
         }
-        if (null == password || password.isBlank()) {
+        if (null == password || password.isBlank() ) {
             throw new IllegalArgumentException("Password cannot be blank");
         }
         var salt = generatePasswordSalt();
@@ -48,9 +49,23 @@ public class InMemoryAuthenticationService implements AuthenticationService {
         if (oldUser != null) {
             throw new InvalidOperationException("Specified user already exists");
         }
+        if (!isPasswordValid(password)) {
+            throw new IllegalArgumentException("Password is too simple");
+        }
         return user.asUserFacade();
     }
 
+    Pattern usernamePattern = Pattern.compile("^\\w{3,}$");
+    Pattern passwordPattern = Pattern.compile("^(?=.*\\d)(?=.*\\w)(?=.*\\W).{12,}$");
+    private boolean isUsernameValid(String name) {
+        // enforce any username policies here. Example:
+        return usernamePattern.matcher(name).matches();
+    }
+
+    private boolean isPasswordValid(String password) {
+        // enforce any password policies here. Example:
+        return passwordPattern.matcher(password).matches();
+    }
     private byte[] generatePasswordSalt() {
         var salt = new byte[PASSWORD_SALT_LENGTH];
         saltGenerator.nextBytes(salt);
@@ -91,7 +106,7 @@ public class InMemoryAuthenticationService implements AuthenticationService {
 
     @Override
     public Role createRole(String name) {
-        if (null == name || name.isBlank()) {
+        if (null == name || name.isBlank() ) {
             throw new IllegalArgumentException("Role name cannot be blank");
         }
 
@@ -102,6 +117,8 @@ public class InMemoryAuthenticationService implements AuthenticationService {
         }
         return role;
     }
+
+
 
     @Override
     public Optional<Role> findRole(String name) {

@@ -341,7 +341,7 @@ class AuthenticationServiceTest {
         }
 
         @Nested
-        class WithInvalidArguments {
+        class WithInvalidArgumentsMustFail {
             
             @Test
             void roleWithEmptyName() {
@@ -360,6 +360,17 @@ class AuthenticationServiceTest {
                 assertThrows(IllegalArgumentException.class, () -> service.createUser("User4", null));
                 assertThrows(IllegalArgumentException.class, () -> service.createUser("User4",""));
                 assertThrows(IllegalArgumentException.class, () -> service.createUser("User4"," "));
+            }
+
+            @Test
+            void userWithPasswordTooShort() {
+                assertThrows(IllegalArgumentException.class, () -> service.createUser("User4", "password1"));
+            }
+
+            @Test
+            void userWithTooSimplePassword() {
+                assertThrows(IllegalArgumentException.class, () -> service.createUser("User4",
+                        "longbutpassword1"));
             }
 
             @Test
