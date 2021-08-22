@@ -9,7 +9,7 @@ import java.util.Locale;
 
 class UserFacade implements  User {
 
-    private String username;
+    private final String username;
 
     UserFacade(String username) {
         this.username = username;
@@ -24,8 +24,8 @@ class UserFacade implements  User {
 class UserRecord {
 
     final String userName;
-    private byte[] salt;
-    private byte[] passwordHash;
+    private final byte[] salt;
+    private final byte[] passwordHash;
 
     UserRecord(String userName, byte[] salt, byte[] passwordHash) {
         this.userName = toCanonicalName(userName);

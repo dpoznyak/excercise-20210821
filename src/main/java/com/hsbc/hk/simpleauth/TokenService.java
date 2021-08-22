@@ -20,8 +20,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 class TokenService {
 
-    private byte[] secretKey;
-    private TemporalAmount expiryTimeout;
+    private final byte[] secretKey;
+    private final TemporalAmount expiryTimeout;
 
     public TokenService(byte[] secretKey, TemporalAmount expiryTimeout) {
         this.secretKey = secretKey;
