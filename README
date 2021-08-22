@@ -51,6 +51,10 @@ Following policies/assumptions were applied:
     * invalidated tokens need to be stored (and synchronized across nodes if needed / persisted in storage)
     * tokens are tamper resistent
 
+## Concurrency
+
+All public methods of InMemoryAuthenticationService are thread-safe.
+
 # Not implemented features and NFRs
 
 Below NFRs are critical for production use but not implemented currently due to resource constraints.
@@ -77,3 +81,8 @@ Authentication failures should be logged for audit reasons.
 Following policies should be considered for production usage:
 * Account lockout 
 * Customizable password policies
+
+# Testing
+
+* Code was build using BDD
+* Nonfunctional testing, such as performance and capacity testing, as well as testing for concurrency and token expiration was omitted due to resource contraints. 
