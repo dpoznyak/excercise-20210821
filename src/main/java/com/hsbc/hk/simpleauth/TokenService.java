@@ -15,6 +15,9 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * TokenService is responsible for creating, validating, and invalidating tokens
+ */
 class TokenService {
 
     private byte[] secretKey;
@@ -25,11 +28,13 @@ class TokenService {
         this.expiryTimeout = expiryTimeout;
     }
 
+    /**
+     * Defines data included in a token
+     */
     public static class TokenData {
         String username;
         String salt;
         LocalDateTime expiryDate;
-        String[] roles;
 
         public String getUsername() {
             return username;
@@ -43,15 +48,10 @@ class TokenService {
             return expiryDate;
         }
 
-        public String[] getRoles() {
-            return roles;
-        }
-
         public TokenData(String username, String salt, LocalDateTime expiryDate, String[] roles) {
             this.username = username;
             this.salt = salt;
             this.expiryDate = expiryDate;
-            this.roles = roles;
         }
 
         @Override
@@ -59,13 +59,12 @@ class TokenService {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             TokenData tokenData = (TokenData) o;
-            return username.equals(tokenData.username) && salt.equals(tokenData.salt) && expiryDate.equals(tokenData.expiryDate) && Arrays.equals(roles, tokenData.roles);
+            return username.equals(tokenData.username) && salt.equals(tokenData.salt) && expiryDate.equals(tokenData.expiryDate);
         }
 
         @Override
         public int hashCode() {
             int result = Objects.hash(username, salt, expiryDate);
-            result = 31 * result + Arrays.hashCode(roles);
             return result;
         }
     }
@@ -101,6 +100,10 @@ class TokenService {
             result = 31 * result + Arrays.hashCode(mac);
             return result;
         }
+
+        private boolean isExpired() {
+            return !data.expiryDate.isAfter(LocalDateTime.now());
+        }
     }
 
     private static final String MAC_ALGO = "HmacSHA512";
@@ -113,32 +116,54 @@ class TokenService {
         return new TokenImpl(data, calculateHmac(data));
     }
 
+    /**
+     * validates token for integrity, authenticity and validity
+     * @return TokenData if token is valid, otherwise null
+     */
     public TokenData validateToken(Token token) {
-        if (invalidatedTokens.containsKey(token)) {
-            return null;
+        if (token == null) {
+            throw new IllegalArgumentException("Token must not be null");
         }
 
+        var isInvalidated = invalidatedTokens.containsKey(token);
+
+        // unrecognized token?
         if (!(token instanceof TokenImpl)) return null;
 
         var tokenImpl = (TokenImpl)token;
 
+        boolean isExpired = tokenImpl.isExpired();
+
+        // invalidated token?
+        if (isInvalidated) {
+            // no need to track expired invalidated tokens
+            if (isExpired) {
+                invalidatedTokens.remove(token);
+            }
+            return null;
+        }
+
+        // corrupted / fake token?
         if (!Arrays.equals(tokenImpl.mac, calculateHmac(tokenImpl.data))) return null;
 
-        if (!tokenImpl.data.expiryDate.isAfter(LocalDateTime.now())) return null;
+        // expired token?
+        if (isExpired) return null;
 
         return tokenImpl.data;
     }
 
+    /**
+     * Calculates HMAC signature used to ensure token authenticity and integrity
+     */
     byte[] calculateHmac(TokenData data) {
         try {
             var mac = Mac.getInstance(MAC_ALGO);
             var keySpec = new SecretKeySpec(secretKey, MAC_ALGO);
             mac.init(keySpec);
-            mac.update(String.format("%s.%s.%d.%s",
+            mac.update(String.format("%s.%s.%d",
                             data.username,
                             data.salt,
-                            data.expiryDate.atZone(ZoneId.systemDefault()).toEpochSecond(),
-                            String.join(",", data.roles))
+                            data.expiryDate.atZone(ZoneId.systemDefault()).toEpochSecond())
                     .getBytes(StandardCharsets.UTF_8));
             return mac.doFinal();
 
@@ -150,7 +175,6 @@ class TokenService {
 
 
 
-    //TODO: remove entries when they expire
     ConcurrentHashMap<Token, Token> invalidatedTokens = new ConcurrentHashMap<>();
 
     public void invalidate(Token token) {

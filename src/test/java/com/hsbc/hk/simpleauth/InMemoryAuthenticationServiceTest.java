@@ -11,14 +11,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -45,7 +43,7 @@ class AuthenticationServiceTest {
 
     @BeforeEach
     void createNew() throws NoSuchAlgorithmException {
-        service = new InMemoryAuthenticationService();
+        service = new InMemoryAuthenticationService("Key213124134", Duration.ofDays(1));
     }
 
     @Nested
@@ -200,9 +198,23 @@ class AuthenticationServiceTest {
                 checkRolesForToken(token3, Arrays.asList());
             }
 
+            @Nested
+            class WhenRolesChangedAfterTokenIssued {
+                @BeforeEach
+                void changeUser1Roles() {
+                    service.addRoleToUser(role2, user1);
+                }
+
+                @Test
+                void existingTokenShouldReturnNewRole() {
+                    checkRolesForToken(token1, Arrays.asList(role1, role2));
+
+                }
+            }
+
             private void checkRolesForToken(Token token, List<Role> roles) {
                 for (var r : roles) {
-                    assertTrue(service.checkRole(token, r), "User expected to be in role");
+                    assertTrue(service.checkRole(token, r), "User expected to be in role " + r.name());
                 }
 
                 assertFalse(service.checkRole(token, role3), "User NOT expected to be in role");
@@ -320,11 +332,6 @@ class AuthenticationServiceTest {
                     var usernameField = data1.getClass().getDeclaredField("username");
                     usernameField.setAccessible(true);
                     usernameField.set(data1, "User2");
-
-                    var data1_2 = dataField.get(token1_2);
-                    var rolesField = data1_2.getClass().getDeclaredField("roles");
-                    rolesField.setAccessible(true);
-                    rolesField.set(data1_2, new String[]{ROLE_3});
                 }
 
                 @Test
@@ -332,11 +339,7 @@ class AuthenticationServiceTest {
                     assertThrows(InvalidTokenException.class, () -> service.getAllRoles(token1));
                     assertThrows(InvalidTokenException.class, () -> service.checkRole(token1, role1));
                 }
-                @Test
-                void token1_2NoLongerValid() {
-                    assertThrows(InvalidTokenException.class, () -> service.getAllRoles(token1_2));
-                    assertThrows(InvalidTokenException.class, () -> service.checkRole(token1_2, role1));
-                }
+
             }
         }
 

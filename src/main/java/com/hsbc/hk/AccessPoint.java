@@ -4,9 +4,11 @@ package com.hsbc.hk;
 import com.hsbc.hk.simpleauth.InMemoryAuthenticationService;
 import jdk.jshell.spi.ExecutionControl;
 
+import java.time.Duration;
+
 public class AccessPoint {
     public AuthenticationService createInstance() throws ExecutionControl.NotImplementedException {
-        // @TODO implement this method to return a concrete instance of @see AuthenticationService interface implementation
-        return new InMemoryAuthenticationService();
+        // @TODO: service parameters must be injected via appropriate mechanism from configs/secrets.
+        return new InMemoryAuthenticationService("Key213124134", Duration.ofDays(1));
     }
 }
